@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Capture">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzBhMGEwYSIvPjx0ZXh0IHg9IjYwIiB5PSI4MCIgZm9udC1mYW1pbHk9Ii1hcHBsZS1zeXN0ZW0iIGZvbnQtc2l6ZT0iNjAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNlOGQ1YjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkM8L3RleHQ+PC9zdmc+">
+<title>Capture</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0a0a0a;--surface:#141414;--border:#222;--text:#f0f0f0;
+    --muted:#666;--accent:#e8d5b0;--accent-dim:#b8a880;
+    --success:#3a8;--error:#c44;--radius:14px;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;
+    overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column;min-height:100vh;min-height:-webkit-fill-available;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+
+  .screen{display:none;flex-direction:column;flex:1;padding:24px 20px}
+  .screen.active{display:flex}
+
+  h1{font-size:22px;font-weight:600;letter-spacing:-.5px;color:var(--accent);margin-bottom:8px}
+  .subtitle{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+  .label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block}
+  .helper{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .helper a{color:var(--accent-dim);text-decoration:none}
+
+  input,textarea{width:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text);font-size:14px;
+    font-family:'SF Mono','Menlo',monospace;outline:none;-webkit-appearance:none;margin-bottom:16px}
+  textarea{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:17px;line-height:1.55;min-height:160px;resize:none}
+  input:focus,textarea:focus{border-color:var(--accent-dim)}
+  input::placeholder,textarea::placeholder{color:var(--muted)}
+
+  .btn{width:100%;padding:16px;border:none;border-radius:var(--radius);
+    font-size:16px;font-weight:600;cursor:pointer;-webkit-appearance:none;transition:opacity .15s;margin-bottom:10px}
+  .btn:active{opacity:.8}
+  .btn:disabled{opacity:.35}
+  .btn-primary{background:var(--accent);color:#111}
+  .btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .wordmark{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);opacity:.6}
+  .settings-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
+
+  #hint{font-size:11px;color:var(--muted);text-align:center;margin:10px 0;line-height:1.5}
+  #hint strong{color:var(--accent-dim);font-weight:500}
+
+  .result-icon{font-size:48px;text-align:center;margin:20px 0 12px}
+  .result-label{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:6px}
+  .result-dest{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px}
+  .result-text{padding:16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);font-size:15px;line-height:1.55;white-space:pre-wrap;margin-bottom:20px;flex:1}
+
+  .t-note{color:#7ab}.t-task{color:#e8a}.t-person{color:#8d8}
+  .t-investment{color:#ad8}.t-reminder{color:#ea8}.t-calendar{color:#8ae}
+  .t-search{color:#b8a}.t-idea{color:#a8d}
+
+  #toast{position:fixed;bottom:calc(env(safe-area-inset-bottom)+24px);left:50%;
+    transform:translateX(-50%) translateY(80px);background:var(--surface);
+    border:1px solid var(--border);color:var(--text);padding:12px 24px;
+    border-radius:100px;font-size:13px;font-weight:500;white-space:nowrap;
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:100;max-width:90%}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.ok{border-color:var(--success);color:#6ec}
+  #toast.err{border-color:var(--error);color:#f88}
+
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--muted);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup" class="screen active">
+  <h1>Capture Setup</h1>
+  <p class="subtitle">One-time. Both keys stored only on this device. Never leave your iPhone.</p>
+
+  <span class="label">Claude API Key</span>
+  <input id="claude-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  <p class="helper"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a> → Create Key</p>
+
+  <div style="height:12px"></div>
+
+  <span class="label">Notion Integration Token</span>
+  <input id="notion-key" type="password" placeholder="secret_..." autocomplete="off" spellcheck="false">
+  <p class="helper"><a href="https://notion.so/my-integrations" target="_blank">notion.so/my-integrations</a> → iPhone Capture → Internal Integration Secret</p>
+
+  <div style="height:24px"></div>
+
+  <button class="btn btn-primary" onclick="saveSetup()">Save &amp; Start</button>
+</div>
+
+<!-- CAPTURE -->
+<div id="capture" class="screen">
+  <div class="header">
+    <span class="wordmark">Capture</span>
+    <button class="settings-btn" onclick="resetSetup()">⚙</button>
+  </div>
+  <textarea id="cap-area" placeholder="Type or use SuperWhisper keyboard. Say anything — notes, people, tasks, ideas, meetings, questions, follow-ups."></textarea>
+  <p id="hint">Globe icon → SuperWhisper → mic → speak → Stop</p>
+  <button class="btn btn-primary" id="send-btn" onclick="sendCapture()">Capture →</button>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="header">
+    <span class="wordmark">Done</span>
+    <button class="settings-btn" onclick="newCapture()">✕</button>
+  </div>
+  <div class="result-icon" id="result-icon"></div>
+  <div class="result-label" id="result-label"></div>
+  <div class="result-dest" id="result-dest"></div>
+  <div class="result-text" id="result-text"></div>
+  <button class="btn btn-primary" id="result-action" style="display:none"></button>
+  <button class="btn btn-ghost" onclick="newCapture()">New Capture</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────
+const NOTION = {
+  inbox:      '32cc6714372f81f386dfdc8650744187',
+  inboxOS:    'c4a11dca77a44421b5dfde2eb4d41071',
+  people:     '42036688ef37424fa3fe6eade7af7329',
+  investment: 'ea04fd0a8ab6445dba329aa3c7fc79d9',
+  actions:    '4237bdd42c824b5da2392dad0f47170d'
+};
+const KARMAND_EMAIL = 'karmandehman@gmail.com';
+const CLAUDE_MODEL = 'claude-haiku-4-5';
+
+// ─── STORAGE ───────────────────────────────────────────────────
+const get = k => localStorage.getItem(k);
+const set = (k,v) => localStorage.setItem(k,v);
+
+// ─── UI ────────────────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function saveSetup(){
+  const ck = document.getElementById('claude-key').value.trim();
+  const nk = document.getElementById('notion-key').value.trim();
+  if(!ck.startsWith('sk-ant-')){ toast('Claude key must start with sk-ant-','err'); return; }
+  if(!nk.startsWith('secret_') && !nk.startsWith('ntn_')){ toast('Notion token must start with secret_ or ntn_','err'); return; }
+  set('ck', ck); set('nk', nk);
+  show('capture');
+  setTimeout(()=>document.getElementById('cap-area').focus(), 150);
+}
+
+function resetSetup(){
+  if(!confirm('Clear tokens and start over?')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+function newCapture(){
+  document.getElementById('cap-area').value = '';
+  show('capture');
+  setTimeout(()=>document.getElementById('cap-area').focus(), 150);
+}
+
+// ─── CLAUDE CLASSIFICATION ─────────────────────────────────────
+async function classify(text){
+  const systemPrompt = `You are a personal capture system for a senior executive. Classify the input and return ONLY valid JSON. No commentary, no markdown, no explanation.
+
+TYPES:
+- person: new contact or person met ("met X", "talked to Y", "introduced to Z")
+- investment: company/deal/fund ("Afras competitor Carbtrol", "Sequoia raised", "interesting company X")
+- task: action needed, no fixed time ("email X", "call Y", "follow up on Z")
+- reminder: time-based personal action ("remind me to X tomorrow", "don't forget to Y at 3pm")
+- calendar: scheduled event with others ("lunch with X Friday", "meeting with Y Tuesday 2pm")
+- search: question or lookup ("who is X", "what time does Y close", "when does Z open")
+- note: information worth remembering that doesn't fit above
+- idea: future exploration ("what if", "could we", "idea — X")
+
+RULES:
+- Default to "note" when uncertain
+- Title: max 8 words, clean summary
+- content: the original text cleaned up slightly
+- For calendar/reminder: parse date/time if present, ISO 8601 format, empty string if not
+- For search: populate search_query with the lookup terms
+
+OUTPUT (strict JSON):
+{"type":"","title":"","content":"","reply":"","date":"","search_query":""}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': get('ck'),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: text }]
+    })
+  });
+
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error(`Claude API: ${res.status} ${err.slice(0,200)}`);
+  }
+
+  const data = await res.json();
+  const responseText = data.content[0].text.trim();
+
+  // Extract JSON (handle case where Claude wraps in markdown)
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if(!jsonMatch) throw new Error('Claude returned non-JSON response');
+
+  return JSON.parse(jsonMatch[0]);
+}
+
+// ─── NOTION ────────────────────────────────────────────────────
+function notionHeaders(){
+  return {
+    'Authorization': `Bearer ${get('nk')}`,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28'
+  };
+}
+
+const rt = s => [{type:'text',text:{content:s}}];
+const tp = s => ({title:[{text:{content:s}}]});
+const txp = s => ({rich_text: rt(s)});
+const sel = s => ({select:{name:s}});
+
+async function notionPatchInbox(content){
+  const r = await fetch(`https://api.notion.com/v1/blocks/${NOTION.inbox}/children`, {
+    method: 'PATCH', headers: notionHeaders(),
+    body: JSON.stringify({
+      children: [{object:'block', type:'paragraph',
+        paragraph:{rich_text: rt(content)}}]
+    })
+  });
+  if(!r.ok){ const e = await r.text(); throw new Error(`Notion: ${r.status} ${e.slice(0,200)}`); }
+  return r;
+}
+
+async function notionCreatePage(dbId, props){
+  const r = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST', headers: notionHeaders(),
+    body: JSON.stringify({ parent:{database_id: dbId}, properties: props })
+  });
+  if(!r.ok){ const e = await r.text(); throw new Error(`Notion: ${r.status} ${e.slice(0,200)}`); }
+  return r;
+}
+
+// ─── ROUTE ─────────────────────────────────────────────────────
+async function route(cls){
+  const { type, title, content } = cls;
+  const t = title || content.slice(0,60);
+  const today = new Date().toISOString().slice(0,10);
+
+  if(type === 'person'){
+    await notionCreatePage(NOTION.people, {
+      'Name': tp(t), 'Notes': txp(content), 'Follow-up Needed':{checkbox:false}
+    });
+    return 'Saved to People Inbox';
+  }
+  if(type === 'investment'){
+    await notionCreatePage(NOTION.investment, {
+      'Company': tp(t), 'Why Interesting': txp(content),
+      'Source': txp('Capture'), 'Status': sel('Watching'),
+      'Date Added': {date:{start: today}}
+    });
+    return 'Saved to Investment Watchlist';
+  }
+  if(type === 'task'){
+    await notionCreatePage(NOTION.actions, {
+      'Task': tp(t), 'Status': sel('To Do'),
+      'Priority': sel('Medium'), 'Source': sel('Assistant'),
+      'Notes': txp(content)
+    });
+    return 'Saved to Notes & Actions';
+  }
+  if(type === 'note' || type === 'idea'){
+    await notionCreatePage(NOTION.inboxOS, {
+      'Name': tp(t), 'Type': sel(type),
+      'Content': txp(content), 'Status': sel('inbox')
+    });
+    return `Saved to Inbox OS (${type})`;
+  }
+  if(type === 'calendar' || type === 'reminder'){
+    // Log to 00 Inbox for record, user completes via button on result screen
+    await notionPatchInbox(`[${type.toUpperCase()}] ${content}${cls.date ? ' | ' + cls.date : ''}`);
+    return type === 'calendar' ? 'Logged — send to Karmand below' : 'Logged — open Reminders below';
+  }
+  if(type === 'search'){
+    return 'Opening Perplexity';
+  }
+  // Fallback
+  await notionPatchInbox(content);
+  return 'Saved to 00 Inbox';
+}
+
+// ─── TYPE METADATA ─────────────────────────────────────────────
+const TYPES = {
+  note:       {icon:'📝', label:'Note',       cls:'t-note'},
+  task:       {icon:'✅', label:'Task',       cls:'t-task'},
+  person:     {icon:'👤', label:'Contact',    cls:'t-person'},
+  investment: {icon:'📈', label:'Investment', cls:'t-investment'},
+  reminder:   {icon:'🔔', label:'Reminder',   cls:'t-reminder'},
+  calendar:   {icon:'📅', label:'Calendar',   cls:'t-calendar'},
+  search:     {icon:'🔍', label:'Search',     cls:'t-search'},
+  idea:       {icon:'💡', label:'Idea',       cls:'t-idea'}
+};
+
+// ─── SHOW RESULT ───────────────────────────────────────────────
+function showResult(cls, destMsg){
+  const meta = TYPES[cls.type] || TYPES.note;
+  document.getElementById('result-icon').textContent = meta.icon;
+  const lbl = document.getElementById('result-label');
+  lbl.textContent = meta.label;
+  lbl.className = 'result-label ' + meta.cls;
+  document.getElementById('result-dest').textContent = destMsg;
+  document.getElementById('result-text').textContent = cls.content || cls.title;
+
+  const ab = document.getElementById('result-action');
+  ab.style.display = 'none';
+
+  if(cls.type === 'calendar'){
+    ab.style.display = 'block';
+    ab.textContent = '📧  Send to Karmand';
+    ab.onclick = () => {
+      const subj = encodeURIComponent(cls.title || cls.content);
+      const body = encodeURIComponent(cls.content + (cls.date ? `\n\nWhen: ${cls.date}` : '') + '\n\nInclude travel time.');
+      window.location.href = `mailto:${KARMAND_EMAIL}?subject=${subj}&body=${body}`;
+    };
+  } else if(cls.type === 'reminder'){
+    ab.style.display = 'block';
+    ab.textContent = '🔔  Open Reminders';
+    ab.onclick = () => { window.location.href = 'x-apple-reminderkit://'; };
+  } else if(cls.type === 'search'){
+    ab.style.display = 'block';
+    ab.textContent = '🔍  Open in Perplexity';
+    const q = cls.search_query || cls.content;
+    ab.onclick = () => { window.open(`https://www.perplexity.ai/search?q=${encodeURIComponent(q)}`, '_blank'); };
+    // Auto-open search
+    setTimeout(() => window.open(`https://www.perplexity.ai/search?q=${encodeURIComponent(q)}`, '_blank'), 400);
+  }
+
+  show('result');
+}
+
+// ─── MAIN ──────────────────────────────────────────────────────
+async function sendCapture(){
+  const text = document.getElementById('cap-area').value.trim();
+  if(!text){ toast('Nothing to capture','err'); return; }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Thinking…';
+
+  try {
+    const cls = await classify(text);
+    btn.innerHTML = '<span class="spinner"></span>Routing…';
+    const destMsg = await route(cls);
+    btn.disabled = false;
+    btn.textContent = 'Capture →';
+    showResult(cls, destMsg);
+  } catch(e){
+    btn.disabled = false;
+    btn.textContent = 'Capture →';
+    toast(e.message.slice(0,80), 'err');
+    console.error(e);
+  }
+}
+
+function toast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(()=> t.className = type, 3000);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────
+document.getElementById('cap-area').addEventListener('keydown', e => {
+  if((e.metaKey||e.ctrlKey) && e.key === 'Enter') sendCapture();
+});
+
+if(get('ck') && get('nk')){
+  show('capture');
+  setTimeout(()=>document.getElementById('cap-area').focus(), 150);
+}
+</script>
+</body>
+</html>
